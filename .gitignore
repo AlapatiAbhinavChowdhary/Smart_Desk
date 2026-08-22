@@ -1,0 +1,15 @@
+# Environment
+.env
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+build/
+.DS_Store
+
+# Backend DB (Optional: usually you don't commit the DB, but for a simple project maybe you do? I'll exclude it so the user's data isn't public)
+backend/smartdesk.db
