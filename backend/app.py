@@ -33,8 +33,11 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 
+import gc
+torch.set_num_threads(1)
+
 # ---------------------------------------------------------------------------
-# Load models once at startup
+# Load models once at startup (Ultra-low RAM optimization)
 # ---------------------------------------------------------------------------
 print("[SmartDesk] Loading models ...")
 
@@ -43,13 +46,15 @@ _bert_tokenizer = DistilBertTokenizerFast.from_pretrained(
     os.path.join(MODELS_DIR, "bert_tokenizer")
 )
 _bert_model = DistilBertForSequenceClassification.from_pretrained(
-    os.path.join(MODELS_DIR, "bert_model")
+    os.path.join(MODELS_DIR, "bert_model"),
+    low_cpu_mem_usage=True
 )
-# Dynamic quantization: reduces RAM by ~70% so it fits in free 512MB tiers
+# Dynamic quantization: converts FP32 weights to INT8 to cut memory footprint
 _bert_model = torch.quantization.quantize_dynamic(
     _bert_model, {torch.nn.Linear}, dtype=torch.qint8
 )
 _bert_model.eval()
+gc.collect()
 
 with open(os.path.join(MODELS_DIR, "label_mapping.json"), "r") as f:
     _label_mapping = json.load(f)
@@ -62,10 +67,10 @@ _priority_model = joblib.load(os.path.join(MODELS_DIR, "priority_model.pkl"))
 # 3. TF-IDF + Logistic Regression — root cause detection
 _rc_vectorizer = joblib.load(os.path.join(MODELS_DIR, "rc_vectorizer.pkl"))
 _rc_model = joblib.load(os.path.join(MODELS_DIR, "rc_model.pkl"))
+gc.collect()
 
 print("[SmartDesk] All models loaded successfully [OK]")
 
-print("[SmartDesk] All models loaded successfully [OK]")
 
 # Initialize database
 database.init_db()
