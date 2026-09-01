@@ -45,6 +45,10 @@ _bert_tokenizer = DistilBertTokenizerFast.from_pretrained(
 _bert_model = DistilBertForSequenceClassification.from_pretrained(
     os.path.join(MODELS_DIR, "bert_model")
 )
+# Dynamic quantization: reduces RAM by ~70% so it fits in free 512MB tiers
+_bert_model = torch.quantization.quantize_dynamic(
+    _bert_model, {torch.nn.Linear}, dtype=torch.qint8
+)
 _bert_model.eval()
 
 with open(os.path.join(MODELS_DIR, "label_mapping.json"), "r") as f:
@@ -434,4 +438,5 @@ def submit_feedback():
 # Run
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)

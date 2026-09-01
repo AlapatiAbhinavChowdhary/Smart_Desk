@@ -1,6 +1,8 @@
-flask
-flask-cors
-transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
+transformers
 scikit-learn
 joblib
+flask
+flask-cors
+gunicorn
