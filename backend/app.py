@@ -45,14 +45,21 @@ print("[SmartDesk] Loading models ...")
 _bert_tokenizer = DistilBertTokenizerFast.from_pretrained(
     os.path.join(MODELS_DIR, "bert_tokenizer")
 )
-_bert_model = DistilBertForSequenceClassification.from_pretrained(
-    os.path.join(MODELS_DIR, "bert_model"),
-    low_cpu_mem_usage=True
-)
-# Dynamic quantization: converts FP32 weights to INT8 to cut memory footprint
-_bert_model = torch.quantization.quantize_dynamic(
-    _bert_model, {torch.nn.Linear}, dtype=torch.qint8
-)
+
+QUANTIZED_MODEL_PATH = os.path.join(MODELS_DIR, "quantized_bert.pt")
+if os.path.exists(QUANTIZED_MODEL_PATH):
+    print("[SmartDesk] Loading pre-quantized INT8 DistilBERT (ultra-low RAM)...")
+    _bert_model = torch.load(QUANTIZED_MODEL_PATH, map_location="cpu", weights_only=False)
+else:
+    print("[SmartDesk] Loading and dynamically quantizing DistilBERT...")
+    _bert_model = DistilBertForSequenceClassification.from_pretrained(
+        os.path.join(MODELS_DIR, "bert_model"),
+        low_cpu_mem_usage=True
+    )
+    _bert_model = torch.quantization.quantize_dynamic(
+        _bert_model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+
 _bert_model.eval()
 gc.collect()
 
